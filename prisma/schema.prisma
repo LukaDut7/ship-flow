@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserTier {
+  FREE
+  PRO
+  PRO_AGENTS
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum Phase {
+  IDEATION
+  PLANNING
+  DESIGN
+  ARCHITECTURE
+  DEVELOPMENT
+  TESTING
+  SHIPPING
+  ITERATION
+}
+
+enum DocType {
+  PROJECT_BRIEF
+  USER_RESEARCH
+  FEATURE_SPEC
+  DESIGN_SYSTEM
+  WIREFRAME_NOTES
+  TECH_DECISION
+  API_CONTRACT
+  DATA_MODEL
+  IMPLEMENTATION_NOTES
+  ENV_SETUP
+  TEST_STRATEGY
+  DEPLOY_CONFIG
+  LAUNCH_CHECKLIST
+  ITERATION_LOG
+  FEEDBACK_CAPTURE
+}
+
+enum TargetTool {
+  CURSOR
+  CLAUDE_PROJECTS
+  CLAUDE_CODE
+  CHATGPT
+  GENERIC
+}
+
+enum LinkType {
+  REFERENCES
+  DEPENDS_ON
+  IMPLEMENTS
+  SUPERSEDES
+}
+
+// ─── Auth.js Required Models ───
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  tier          UserTier  @default(FREE)
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+  projects Project[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Application Models ───
+
+model Project {
+  id          String        @id @default(cuid())
+  userId      String
+  name        String
+  description String        @default("")
+  techStack   Json          @default("[]")
+  status      ProjectStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
+  bundles   ContextBundle[]
+  prompts   GeneratedPrompt[]
+
+  @@index([userId])
+}
+
+model Document {
+  id             String   @id @default(cuid())
+  projectId      String
+  title          String
+  content        String   @default("") @db.Text
+  phase          Phase
+  docType        DocType
+  sortOrder      Int      @default(0)
+  isFromTemplate Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  linksFrom     DocumentLink[]   @relation("LinkFrom")
+  linksTo       DocumentLink[]   @relation("LinkTo")
+  bundleEntries BundleDocument[]
+  prompts       GeneratedPrompt[]
+
+  @@index([projectId])
+  @@index([projectId, phase])
+}
+
+model DocumentLink {
+  id         String   @id @default(cuid())
+  fromDocId  String
+  toDocId    String
+  linkType   LinkType @default(REFERENCES)
+
+  fromDoc Document @relation("LinkFrom", fields: [fromDocId], references: [id], onDelete: Cascade)
+  toDoc   Document @relation("LinkTo", fields: [toDocId], references: [id], onDelete: Cascade)
+
+  @@unique([fromDocId, toDocId])
+  @@index([fromDocId])
+  @@index([toDocId])
+}
+
+model ContextBundle {
+  id          String  @id @default(cuid())
+  projectId   String
+  name        String
+  description String  @default("")
+  isPreset    Boolean @default(false)
+
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documents BundleDocument[]
+
+  @@index([projectId])
+}
+
+model BundleDocument {
+  id         String @id @default(cuid())
+  bundleId   String
+  documentId String
+  sortOrder  Int    @default(0)
+
+  bundle   ContextBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  document Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([bundleId, documentId])
+  @@index([bundleId])
+}
+
+model GeneratedPrompt {
+  id            String     @id @default(cuid())
+  projectId     String
+  documentId    String?
+  targetTool    TargetTool
+  promptContent String     @db.Text
+  options       Json       @default("{}")
+  createdAt     DateTime   @default(now())
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([projectId, createdAt])
+}
