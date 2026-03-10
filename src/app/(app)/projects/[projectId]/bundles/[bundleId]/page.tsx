@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { prisma } from "@/lib/prisma"
+import { getBundleRepo, getDocumentRepo } from "@/lib/repositories"
 import { requireProjectAccess } from "@/lib/auth-guard"
 import { DOC_TYPE_LABELS, PHASE_LABELS } from "@/lib/constants"
 import { Header } from "@/components/layout/header"
@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { BundleForm } from "@/components/bundles/bundle-form"
 import { BundleActions } from "@/components/bundles/bundle-actions"
 import { BundleExportButton } from "@/components/bundles/bundle-export-button"
-import type { DocType, Phase } from "@prisma/client"
+import type { DocType, Phase } from "@/lib/types/enums"
 
 export default async function BundleDetailPage({
   params,
@@ -25,23 +25,11 @@ export default async function BundleDetailPage({
   const { projectId, bundleId } = await params
   await requireProjectAccess(projectId)
 
-  const bundle = await prisma.contextBundle.findUnique({
-    where: { id: bundleId, projectId },
-    include: {
-      documents: {
-        include: { document: true },
-        orderBy: { sortOrder: "asc" },
-      },
-    },
-  })
+  const bundle = await getBundleRepo().findByIdAndProject(bundleId, projectId)
 
   if (!bundle) return null
 
-  const documents = await prisma.document.findMany({
-    where: { projectId },
-    select: { id: true, title: true, phase: true },
-    orderBy: [{ phase: "asc" }, { sortOrder: "asc" }],
-  })
+  const documents = await getDocumentRepo().findManyByProject(projectId)
 
   const docs = documents.map((d) => ({
     id: d.id,
@@ -63,7 +51,7 @@ export default async function BundleDetailPage({
             <Link
               href={`/projects/${projectId}/prompts/generate?bundleId=${bundleId}`}
             >
-              <Button>Generate Prompt from Bundle</Button>
+              <Button>Help Me Write from Bundle</Button>
             </Link>
             <BundleExportButton bundleId={bundleId} />
             <BundleActions

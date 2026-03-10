@@ -1,6 +1,7 @@
 import { requireProjectAccess } from "@/lib/auth-guard"
 import { Header } from "@/components/layout/header"
 import { ProjectSettingsForm } from "@/components/projects/project-settings-form"
+import { WorkspaceLinkCard } from "@/components/projects/workspace-link-card"
 import { DangerZoneCard } from "@/components/projects/danger-zone-card"
 
 export default async function ProjectSettingsPage({
@@ -23,6 +24,7 @@ export default async function ProjectSettingsPage({
           initialDescription={project.description}
           initialTechStack={techStack}
         />
+        <WorkspaceLinkCard projectId={project.id} />
         <DangerZoneCard projectId={project.id} />
       </div>
     </>

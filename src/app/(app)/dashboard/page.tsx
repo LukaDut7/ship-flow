@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/auth-guard"
-import { prisma } from "@/lib/prisma"
+import { getProjectRepo } from "@/lib/repositories"
 import { Header } from "@/components/layout/header"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,24 +9,7 @@ import Link from "next/link"
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  const projects = await prisma.project.findMany({
-    where: { userId: user.id, status: "ACTIVE" },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      documents: {
-        where: { content: { not: "" } },
-        select: { id: true },
-      },
-    },
-  })
-
-  const projectsWithCount = projects.map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    updatedAt: p.updatedAt,
-    _count: { documents: p.documents.length },
-  }))
+  const projectsWithCount = await getProjectRepo().findManyByUserWithDocCount(user.id, "ACTIVE")
 
   return (
     <>

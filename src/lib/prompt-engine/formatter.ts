@@ -1,4 +1,4 @@
-import type { TargetTool } from "@prisma/client"
+import type { TargetTool } from "@/lib/types/enums"
 import { formatCursor } from "./formatters/cursor"
 import { formatClaudeProjects } from "./formatters/claude-projects"
 import { formatClaudeCode } from "./formatters/claude-code"

@@ -1,5 +1,5 @@
 import { PHASE_LABELS } from "@/lib/constants"
-import type { Phase } from "@prisma/client"
+import type { Phase } from "@/lib/types/enums"
 
 export interface AssemblerInput {
   project: { name: string; description: string; techStack: string[] }

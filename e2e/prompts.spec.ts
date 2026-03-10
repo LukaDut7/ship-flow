@@ -22,15 +22,15 @@ test.afterAll(async () => {
   await cleanupTestProjects()
 })
 
-test.describe("Prompt Generation", () => {
-  test("can navigate to prompt generation page", async ({ page }) => {
+test.describe("Writing Assistant", () => {
+  test("can navigate to writing assistant page", async ({ page }) => {
     await page.goto(`/projects/${projectId}/prompts/generate`)
     await expect(
-      page.getByRole("heading", { name: "Generate Prompt" })
+      page.getByRole("heading", { name: "Help Me Write" })
     ).toBeVisible()
   })
 
-  test("prompt generation page lists project documents", async ({ page }) => {
+  test("writing assistant page lists project documents", async ({ page }) => {
     await page.goto(`/projects/${projectId}/prompts/generate`)
     await expect(page.getByText("Project Brief").first()).toBeVisible()
   })
@@ -48,24 +48,7 @@ test.describe("Prompt Generation", () => {
     await expect(preview).not.toBeEmpty({ timeout: 15000 })
 
     // Char/token count should be visible
-    await expect(page.getByText(/\d+ chars/)).toBeVisible()
-    await expect(page.getByText(/tokens/)).toBeVisible()
-  })
-
-  test("can switch target tool format", async ({ page }) => {
-    await page.goto(`/projects/${projectId}/prompts/generate`)
-
-    // Wait for initial preview
-    const preview = page.locator(".prose").last()
-    await expect(preview).not.toBeEmpty({ timeout: 15000 })
-    const initialText = await preview.textContent()
-
-    // Click "Cursor" tool format button
-    await page.getByRole("button", { name: "Cursor" }).click()
-
-    // Wait for preview to update
-    await page.waitForTimeout(1000)
-    await expect(preview).not.toBeEmpty()
+    await expect(page.getByText(/\d+ chars · ~\d+ tokens/)).toBeVisible()
   })
 
   test("can toggle context options", async ({ page }) => {
@@ -75,10 +58,10 @@ test.describe("Prompt Generation", () => {
     const preview = page.locator(".prose").last()
     await expect(preview).not.toBeEmpty({ timeout: 15000 })
 
-    // Uncheck "Include tech stack"
+    // Uncheck "Tech stack"
     const techStackCheckbox = page
       .locator("label")
-      .filter({ hasText: "Include tech stack" })
+      .filter({ hasText: "Tech stack" })
       .locator('input[type="checkbox"]')
     await techStackCheckbox.uncheck()
 
@@ -87,24 +70,24 @@ test.describe("Prompt Generation", () => {
     await expect(preview).not.toBeEmpty()
   })
 
-  test("can add custom instructions", async ({ page }) => {
+  test("can add additional instructions", async ({ page }) => {
     await page.goto(`/projects/${projectId}/prompts/generate`)
 
     // Wait for initial preview
     const preview = page.locator(".prose").last()
     await expect(preview).not.toBeEmpty({ timeout: 15000 })
 
-    // Add custom instructions
-    const customInstructions = "Always use TypeScript strict mode"
+    // Add additional instructions
+    const instructions = "Focus on the payments feature"
     await page
-      .getByPlaceholder("Add custom instructions for the prompt...")
-      .fill(customInstructions)
+      .getByRole("textbox", { name: /additional instructions/i })
+      .fill(instructions)
 
     // Wait for debounced preview update
     await page.waitForTimeout(1000)
 
-    // Preview should include the custom instruction text
-    await expect(preview).toContainText(customInstructions, { timeout: 10000 })
+    // Preview should include the instruction text
+    await expect(preview).toContainText(instructions, { timeout: 10000 })
   })
 
   test("can copy prompt to clipboard", async ({ page, context }) => {
@@ -122,7 +105,9 @@ test.describe("Prompt Generation", () => {
     await page.getByRole("button", { name: "Copy to Clipboard" }).click()
 
     // Toast should appear
-    await expect(page.getByText("Copied to clipboard")).toBeVisible({
+    await expect(
+      page.getByText("Copied! Paste into ChatGPT, Claude, or any AI tool.")
+    ).toBeVisible({
       timeout: 5000,
     })
   })
@@ -148,6 +133,22 @@ test.describe("Prompt Generation", () => {
     await expect(page.getByText("Project Brief").first()).toBeVisible({
       timeout: 10000,
     })
+  })
+
+  test("preview shows writing-specific content", async ({ page }) => {
+    await page.goto(`/projects/${projectId}/prompts/generate`)
+
+    // Preview should contain writing assistant elements
+    const preview = page.locator(".prose").last()
+    await expect(preview).not.toBeEmpty({ timeout: 15000 })
+
+    // Should contain questions section (from the writing prompt config)
+    await expect(preview).toContainText("Questions to Address", {
+      timeout: 10000,
+    })
+
+    // Should contain output format section
+    await expect(preview).toContainText("Output Format")
   })
 })
 
@@ -220,7 +221,7 @@ test.describe("Prompt History", () => {
   })
 })
 
-test.describe("Prompt Download & Templates", () => {
+test.describe("Prompt Download", () => {
   test("can download prompt as markdown", async ({ page }) => {
     await page.goto(`/projects/${projectId}/prompts/generate`)
 
@@ -236,32 +237,7 @@ test.describe("Prompt Download & Templates", () => {
     const downloadPromise = page.waitForEvent("download")
     await page.getByRole("menuitem", { name: /download as \.md/i }).click()
     const download = await downloadPromise
-    expect(download.suggestedFilename()).toBe("prompt.md")
-  })
-
-  test("can select a template", async ({ page }) => {
-    await page.goto(`/projects/${projectId}/prompts/generate`)
-
-    // Wait for preview
-    await expect(page.locator(".prose").last()).not.toBeEmpty({
-      timeout: 15000,
-    })
-
-    // Open the template select
-    await page
-      .locator("button")
-      .filter({ hasText: "None" })
-      .click()
-
-    // Select first template
-    await page
-      .getByRole("option", { name: /generate feature spec/i })
-      .click()
-
-    // Custom instructions textarea should now contain template text
-    await expect(
-      page.getByPlaceholder("Add custom instructions for the prompt...")
-    ).not.toBeEmpty({ timeout: 5000 })
+    expect(download.suggestedFilename()).toBe("writing-prompt.md")
   })
 
   test("prompt history expand/collapse", async ({ page }) => {

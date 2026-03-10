@@ -1,0 +1,110 @@
+name: Desktop Build
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-web-standalone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Upload standalone output
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone
+          path: .next/standalone/
+          retention-days: 1
+
+  build-mac:
+    needs: build-web-standalone
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Download standalone
+        uses: actions/download-artifact@v4
+        with:
+          name: standalone
+          path: standalone/
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Build desktop
+        working-directory: desktop
+        run: npx tsc
+      - name: Package with electron-builder
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # CSC_LINK: ${{ secrets.MAC_CERTIFICATE }}
+          # CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npx electron-builder --mac --publish always
+
+  build-windows:
+    needs: build-web-standalone
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Download standalone
+        uses: actions/download-artifact@v4
+        with:
+          name: standalone
+          path: standalone/
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Build desktop
+        working-directory: desktop
+        run: npx tsc
+      - name: Package with electron-builder
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # CSC_LINK: ${{ secrets.WIN_CERTIFICATE }}
+          # CSC_KEY_PASSWORD: ${{ secrets.WIN_CERTIFICATE_PASSWORD }}
+        run: npx electron-builder --win --publish always
+
+  build-linux:
+    needs: build-web-standalone
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Download standalone
+        uses: actions/download-artifact@v4
+        with:
+          name: standalone
+          path: standalone/
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Build desktop
+        working-directory: desktop
+        run: npx tsc
+      - name: Package with electron-builder
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --linux --publish always

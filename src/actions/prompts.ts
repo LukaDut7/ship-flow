@@ -1,12 +1,12 @@
 "use server"
 
-import { prisma } from "@/lib/prisma"
+import { getDocumentRepo, getPromptRepo } from "@/lib/repositories"
 import { requireProjectAccess, requireDocAccess, checkTierLimit, requireAuth } from "@/lib/auth-guard"
 import { assemblePrompt } from "@/lib/prompt-engine/assembler"
 import { formatPrompt } from "@/lib/prompt-engine/formatter"
 import { resolveContext } from "@/lib/prompt-engine/context-resolver"
 import { revalidatePath } from "next/cache"
-import type { TargetTool } from "@prisma/client"
+import type { TargetTool } from "@/lib/types/enums"
 
 interface GenerateOptions {
   includeProjectContext: boolean
@@ -25,10 +25,9 @@ export async function generateAndSavePrompt(
   const { user, project } = await requireProjectAccess(projectId)
   await checkTierLimit(user.id, "prompts")
 
-  const document = await prisma.document.findUnique({
-    where: { id: documentId, projectId },
-  })
-  if (!document) throw new Error("Document not found")
+  const documentRepo = getDocumentRepo()
+  const document = await documentRepo.findById(documentId)
+  if (!document || document.projectId !== projectId) throw new Error("Document not found")
 
   const { linkedDocs } = await resolveContext(documentId)
   const resolvedLinked = options.includeLinkedDocs
@@ -58,14 +57,13 @@ export async function generateAndSavePrompt(
 
   const formatted = formatPrompt(assembled, targetTool)
 
-  const prompt = await prisma.generatedPrompt.create({
-    data: {
-      projectId,
-      documentId,
-      targetTool,
-      promptContent: formatted,
-      options: JSON.parse(JSON.stringify(options)),
-    },
+  const promptRepo = getPromptRepo()
+  const prompt = await promptRepo.create({
+    projectId,
+    documentId,
+    targetTool,
+    promptContent: formatted,
+    options: JSON.parse(JSON.stringify(options)),
   })
 
   revalidatePath(`/projects/${projectId}/prompts`)
@@ -85,10 +83,9 @@ export async function generatePromptPreview(
 ) {
   const { project } = await requireProjectAccess(projectId)
 
-  const document = await prisma.document.findUnique({
-    where: { id: documentId, projectId },
-  })
-  if (!document) throw new Error("Document not found")
+  const documentRepo = getDocumentRepo()
+  const document = await documentRepo.findById(documentId)
+  if (!document || document.projectId !== projectId) throw new Error("Document not found")
 
   const { linkedDocs } = await resolveContext(documentId)
   const resolvedLinked = options.includeLinkedDocs
@@ -122,15 +119,13 @@ export async function generatePromptPreview(
 export async function deletePromptHistory(promptId: string) {
   const user = await requireAuth()
 
-  const prompt = await prisma.generatedPrompt.findUnique({
-    where: { id: promptId },
-    include: { project: { select: { userId: true } } },
-  })
+  const promptRepo = getPromptRepo()
+  const prompt = await promptRepo.findByIdWithProject(promptId)
   if (!prompt || prompt.project.userId !== user.id) {
     throw new Error("Prompt not found")
   }
 
-  await prisma.generatedPrompt.delete({ where: { id: promptId } })
+  await promptRepo.delete(promptId)
 
   revalidatePath(`/projects/${prompt.projectId}/prompts`)
   return { success: true }

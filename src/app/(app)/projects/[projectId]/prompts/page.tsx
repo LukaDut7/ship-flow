@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { prisma } from "@/lib/prisma"
+import { getPromptRepo } from "@/lib/repositories"
 import { requireProjectAccess } from "@/lib/auth-guard"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
@@ -13,13 +13,7 @@ export default async function PromptsPage({
   const { projectId } = await params
   await requireProjectAccess(projectId)
 
-  const prompts = await prisma.generatedPrompt.findMany({
-    where: { projectId },
-    orderBy: { createdAt: "desc" },
-    include: {
-      document: { select: { title: true } },
-    },
-  })
+  const prompts = await getPromptRepo().findManyByProject(projectId)
 
   const items = prompts.map((p) => ({
     id: p.id,
@@ -36,7 +30,7 @@ export default async function PromptsPage({
         <div className="mx-auto max-w-4xl space-y-4">
           <div className="flex justify-end">
             <Link href={`/projects/${projectId}/prompts/generate`}>
-              <Button>Generate Prompt</Button>
+              <Button>Help Me Write</Button>
             </Link>
           </div>
           <PromptHistoryList prompts={items} projectId={projectId} />

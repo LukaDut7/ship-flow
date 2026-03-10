@@ -1,4 +1,4 @@
-import type { Phase, DocType } from "@prisma/client"
+import type { Phase, DocType } from "@/lib/types/enums"
 
 export const PHASES: Phase[] = [
   "IDEATION",

@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/prisma"
 import { requireProjectAccess } from "@/lib/auth-guard"
 import {
   DOC_TYPE_LABELS,
@@ -9,7 +8,7 @@ import {
 import { Header } from "@/components/layout/header"
 import { createDocument } from "@/actions/documents"
 import { NewDocForm } from "./new-doc-form"
-import type { Phase } from "@prisma/client"
+import type { Phase } from "@/lib/types/enums"
 
 export default async function NewDocPage({
   params,

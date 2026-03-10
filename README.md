@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ship Flow
 
-## Getting Started
+Ship Flow has two runtimes:
 
-First, run the development server:
+- a hosted/web Next.js app
+- a local-first Electron desktop app
+
+The desktop app is designed to work offline on the local machine, support optional Remote SSH connections, and sync with the cloud when the user signs in.
+
+## Requirements
+
+- Node.js 20+
+- npm
+
+## Setup
+
+Install dependencies from the repo root:
+
+```bash
+npm install
+```
+
+If you want cloud auth and sync, copy `.env.example` to `.env` and fill in the OAuth/database values:
+
+```bash
+cp .env.example .env
+```
+
+Cloud sign-in is optional for local desktop usage. It is required for hosted web auth and cloud sync.
+
+## Run The Web App
+
+Start the normal Next.js web app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run The Desktop App
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Start the Electron desktop app from the repo root:
 
-## Learn More
+```bash
+npm run desktop:dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+What this does:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- builds the Next.js standalone server bundle Electron uses internally
+- builds the desktop workspace
+- launches Electron
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Desktop behavior:
 
-## Deploy on Vercel
+- it boots into the local workspace by default
+- it works offline with local desktop storage
+- cloud sign-in is only needed if you want sync
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Connect To A Remote Machine Over SSH
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Once the desktop app is open:
+
+1. Open `Connection -> Connect to Remote...`
+2. Enter the SSH host, port, username, and private key
+3. Ship Flow will connect over SSH and load the remote workspace
+
+To return to the local workspace, use `Connection -> Return to Local Workspace`.
+
+## Build Desktop Artifacts
+
+Build the standalone server plus compiled Electron files:
+
+```bash
+npm run desktop:build
+```
+
+Package the desktop app:
+
+```bash
+npm run desktop:package
+```
+
+## Notes
+
+- The desktop runtime uses the local standalone app server rather than `next dev`.
+- Remote SSH and cloud sync are separate features.
+- In local mode, the desktop app owns local data and can sync it to cloud later.
+- In SSH mode, the remote Ship Flow server owns the workspace state.

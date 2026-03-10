@@ -1,6 +1,6 @@
 "use server"
 
-import { prisma } from "@/lib/prisma"
+import { getBundleRepo } from "@/lib/repositories"
 import { requireProjectAccess } from "@/lib/auth-guard"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
@@ -15,18 +15,12 @@ export async function createBundle(projectId: string, formData: FormData) {
     ? documentIdsRaw.split(",").filter(Boolean)
     : []
 
-  const bundle = await prisma.contextBundle.create({
-    data: {
-      projectId,
-      name,
-      description,
-      documents: {
-        create: documentIds.map((documentId, index) => ({
-          documentId,
-          sortOrder: index,
-        })),
-      },
-    },
+  const bundleRepo = getBundleRepo()
+  const bundle = await bundleRepo.create({
+    projectId,
+    name,
+    description,
+    documentIds,
   })
 
   revalidatePath(`/projects/${projectId}/bundles`)
@@ -34,10 +28,8 @@ export async function createBundle(projectId: string, formData: FormData) {
 }
 
 export async function updateBundle(bundleId: string, formData: FormData) {
-  const bundle = await prisma.contextBundle.findUnique({
-    where: { id: bundleId },
-    include: { project: { select: { id: true, userId: true } } },
-  })
+  const bundleRepo = getBundleRepo()
+  const bundle = await bundleRepo.findByIdWithProject(bundleId)
   if (!bundle) throw new Error("Bundle not found")
 
   await requireProjectAccess(bundle.project.id)
@@ -49,37 +41,20 @@ export async function updateBundle(bundleId: string, formData: FormData) {
     ? documentIdsRaw.split(",").filter(Boolean)
     : []
 
-  await prisma.$transaction([
-    prisma.bundleDocument.deleteMany({ where: { bundleId } }),
-    prisma.contextBundle.update({
-      where: { id: bundleId },
-      data: {
-        name,
-        description,
-        documents: {
-          create: documentIds.map((documentId, index) => ({
-            documentId,
-            sortOrder: index,
-          })),
-        },
-      },
-    }),
-  ])
+  await bundleRepo.update(bundleId, { name, description, documentIds })
 
   revalidatePath(`/projects/${bundle.project.id}/bundles`)
   revalidatePath(`/projects/${bundle.project.id}/bundles/${bundleId}`)
 }
 
 export async function deleteBundle(bundleId: string) {
-  const bundle = await prisma.contextBundle.findUnique({
-    where: { id: bundleId },
-    include: { project: { select: { id: true, userId: true } } },
-  })
+  const bundleRepo = getBundleRepo()
+  const bundle = await bundleRepo.findByIdWithProject(bundleId)
   if (!bundle) throw new Error("Bundle not found")
 
   await requireProjectAccess(bundle.project.id)
 
-  await prisma.contextBundle.delete({ where: { id: bundleId } })
+  await bundleRepo.delete(bundleId)
 
   revalidatePath(`/projects/${bundle.project.id}/bundles`)
   redirect(`/projects/${bundle.project.id}/bundles`)

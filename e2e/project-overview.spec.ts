@@ -60,11 +60,11 @@ test.describe("Project Overview", () => {
     ).toBeVisible()
   })
 
-  test("Generate Prompt button navigates", async ({ page }) => {
+  test("Help Me Write button navigates", async ({ page }) => {
     await page.goto(`/projects/${projectId}`)
     await page
       .locator("main")
-      .getByRole("link", { name: /generate prompt/i })
+      .getByRole("link", { name: /help me write/i })
       .click()
     await page.waitForURL(/\/prompts\/generate/, { timeout: 10000 })
   })

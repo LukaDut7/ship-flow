@@ -1,68 +1,26 @@
-import type {
-  Project,
-  Document,
-  DocumentLink,
-  ContextBundle,
-  BundleDocument,
-  GeneratedPrompt,
-  Phase,
-  DocType,
-  TargetTool,
-  LinkType,
-} from "@prisma/client"
+// Re-export all types from the canonical hand-written type definitions.
+// Consumer code should import from "@/types" or "@/lib/types".
 
 export type {
+  UserTier,
+  ProjectStatus,
+  Phase,
+  DocType,
+  TargetTool,
+  LinkType,
+  User,
   Project,
   Document,
   DocumentLink,
   ContextBundle,
   BundleDocument,
   GeneratedPrompt,
-  Phase,
-  DocType,
-  TargetTool,
-  LinkType,
-}
+  ProjectWithDocs,
+  DocumentWithLinks,
+  ContextBundleWithDocs,
+} from "@/lib/types"
 
-export type ProjectWithDocs = Project & {
-  documents: Document[]
-}
-
-export type DocumentWithLinks = Document & {
-  linksFrom: (DocumentLink & { toDoc: Document })[]
-  linksTo: (DocumentLink & { fromDoc: Document })[]
-}
-
-export type ContextBundleWithDocs = ContextBundle & {
-  documents: (BundleDocument & { document: Document })[]
-}
-
-export interface AssemblerInput {
-  project: {
-    name: string
-    description: string
-    techStack: string[]
-  }
-  primaryDoc: {
-    title: string
-    content: string
-    phase: string
-    docType: string
-  }
-  linkedDocs: Array<{
-    title: string
-    content: string
-    phase: string
-    linkType: string
-  }>
-  options: {
-    includeProjectContext: boolean
-    includeTechStack: boolean
-    includePhaseContext: boolean
-    includeLinkedDocs: boolean
-    customInstructions?: string
-  }
-}
+export type { AssemblerInput } from "@/lib/prompt-engine/assembler"
 
 export interface PromptTemplateConfig {
   id: string
@@ -73,3 +31,6 @@ export interface PromptTemplateConfig {
   suggestedDocTypes: DocType[]
   instructionTemplate: string
 }
+
+// Import Phase and DocType for use in the interface above
+import type { Phase, DocType } from "@/lib/types"

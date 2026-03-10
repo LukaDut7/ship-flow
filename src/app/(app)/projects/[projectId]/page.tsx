@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { requireProjectAccess } from "@/lib/auth-guard"
-import { prisma } from "@/lib/prisma"
+import { getDocumentRepo } from "@/lib/repositories"
 import { Header } from "@/components/layout/header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,7 @@ import {
   PHASE_DOC_MAP,
 } from "@/lib/constants"
 import { ExportDropdown } from "@/components/projects/export-dropdown"
-import type { Phase } from "@prisma/client"
+import type { Phase } from "@/lib/types/enums"
 
 const PHASE_ICON_MAP: Record<Phase, React.ComponentType<{ className?: string }>> = {
   IDEATION: Lightbulb,
@@ -45,12 +45,9 @@ export default async function ProjectPage({
   const { projectId } = await params
   const { project } = await requireProjectAccess(projectId)
 
-  const documents = await prisma.document.findMany({
-    where: { projectId },
-    select: { id: true, title: true, phase: true, docType: true, content: true },
-  })
+  const documents = await getDocumentRepo().findManyByProject(projectId)
 
-  const techStack = (project.techStack as string[]) ?? []
+  const techStack = project.techStack ?? []
 
   const phaseStats = PHASES.map((phase) => {
     const configs = PHASE_DOC_MAP[phase]
@@ -124,7 +121,7 @@ export default async function ProjectPage({
             <Link href={`/projects/${projectId}/prompts/generate`}>
               <Button size="sm">
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate Prompt
+                Help Me Write
               </Button>
             </Link>
             <Link href={`/projects/${projectId}/settings`}>

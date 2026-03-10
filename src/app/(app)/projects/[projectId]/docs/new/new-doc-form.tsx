@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import type { Phase } from "@prisma/client"
+import type { Phase } from "@/lib/types/enums"
 
 interface NewDocFormProps {
   projectId: string

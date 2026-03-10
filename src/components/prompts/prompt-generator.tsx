@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { toast } from "sonner"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
+import { CollapsibleMarkdown } from "@/components/ui/collapsible-markdown"
 import { DownloadIcon } from "lucide-react"
 import { BUILT_IN_TEMPLATES } from "@/lib/prompt-engine/templates"
 import { generatePromptPreview, generateAndSavePrompt } from "@/actions/prompts"
@@ -30,8 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { PHASE_LABELS } from "@/lib/constants"
-import type { Phase } from "@prisma/client"
-import type { TargetTool } from "@prisma/client"
+import type { Phase, TargetTool } from "@/lib/types/enums"
 
 interface Document {
   id: string
@@ -340,11 +338,10 @@ export function PromptGenerator({
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Generating preview…</p>
             ) : preview ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none max-h-[60vh] overflow-y-auto">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {preview}
-                </ReactMarkdown>
-              </div>
+              <CollapsibleMarkdown
+                content={preview}
+                className="prose prose-sm dark:prose-invert max-w-none max-h-[60vh] overflow-y-auto"
+              />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Select a document to see the preview.

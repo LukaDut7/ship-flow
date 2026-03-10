@@ -15,7 +15,7 @@ import { PHASES, PHASE_LABELS } from "@/lib/constants"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { Phase } from "@prisma/client"
+import type { Phase } from "@/lib/types/enums"
 
 interface Document {
   id: string

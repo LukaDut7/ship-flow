@@ -1,0 +1,6 @@
+export { DesktopProjectRepo } from "./project-repo"
+export { DesktopDocumentRepo, DesktopDocumentLinkRepo } from "./document-repo"
+export { DesktopBundleRepo } from "./bundle-repo"
+export { DesktopPromptRepo } from "./prompt-repo"
+export { DesktopUserRepo } from "./user-repo"
+export { getDesktopDb, closeDesktopDb } from "./db"

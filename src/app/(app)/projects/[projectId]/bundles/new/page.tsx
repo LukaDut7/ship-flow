@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { getDocumentRepo } from "@/lib/repositories"
 import { requireProjectAccess } from "@/lib/auth-guard"
 import { Header } from "@/components/layout/header"
 import { BundleForm } from "@/components/bundles/bundle-form"
@@ -11,11 +11,7 @@ export default async function NewBundlePage({
   const { projectId } = await params
   await requireProjectAccess(projectId)
 
-  const documents = await prisma.document.findMany({
-    where: { projectId },
-    select: { id: true, title: true, phase: true },
-    orderBy: [{ phase: "asc" }, { sortOrder: "asc" }],
-  })
+  const documents = await getDocumentRepo().findManyByProject(projectId)
 
   const docs = documents.map((d) => ({
     id: d.id,

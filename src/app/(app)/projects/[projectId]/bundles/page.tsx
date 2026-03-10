@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { prisma } from "@/lib/prisma"
+import { getBundleRepo } from "@/lib/repositories"
 import { requireProjectAccess } from "@/lib/auth-guard"
 import { Header } from "@/components/layout/header"
 import { Badge } from "@/components/ui/badge"
@@ -14,13 +14,7 @@ export default async function BundlesPage({
   const { projectId } = await params
   await requireProjectAccess(projectId)
 
-  const bundles = await prisma.contextBundle.findMany({
-    where: { projectId },
-    include: {
-      _count: { select: { documents: true } },
-    },
-    orderBy: { name: "asc" },
-  })
+  const bundles = await getBundleRepo().findManyByProject(projectId)
 
   return (
     <div className="flex h-full flex-col">

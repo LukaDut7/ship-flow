@@ -1,0 +1,30 @@
+{
+  "name": "@shipflow/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "tsc && npm run copy-renderer && electron .",
+    "build": "tsc && npm run copy-renderer",
+    "copy-renderer": "node -e \"const fs=require('fs'),p=require('path');const s='src/renderer',d='dist/renderer';fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).forEach(f=>fs.copyFileSync(p.join(s,f),p.join(d,f)))\"",
+    "package": "electron-builder",
+    "package:mac": "electron-builder --mac",
+    "package:win": "electron-builder --win",
+    "package:linux": "electron-builder --linux",
+    "typecheck": "tsc --noEmit"
+  },
+  "build": {
+    "extends": "./electron-builder.yml"
+  },
+  "devDependencies": {
+    "@types/ssh2": "^1.15.0",
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@shipflow/shared": "*",
+    "electron-updater": "^6.6.2",
+    "ssh2": "^1.16.0"
+  }
+}

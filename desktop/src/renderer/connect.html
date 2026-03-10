@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+  <title>Ship Flow — Connect</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e5e5e5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .subtitle { color: #888; font-size: 14px; margin-bottom: 32px; }
+    .cards { display: flex; gap: 16px; margin-bottom: 32px; width: 100%; max-width: 640px; }
+    .card {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .card:hover { border-color: #555; background: #222; }
+    .card.active { border-color: #3b82f6; }
+    .card h2 { font-size: 16px; margin-bottom: 4px; }
+    .card p { font-size: 13px; color: #888; }
+    .form-section {
+      width: 100%; max-width: 640px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      display: none;
+    }
+    .form-section.visible { display: block; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+    .form-row .form-group.small { flex: 0 0 100px; }
+    input[type="text"], input[type="number"], input[type="password"] {
+      width: 100%;
+      padding: 8px 12px;
+      background: #0a0a0a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #e5e5e5;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus { border-color: #3b82f6; }
+    .key-row { display: flex; gap: 8px; }
+    .key-row input { flex: 1; }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #222;
+      color: #e5e5e5;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #333; }
+    .btn.primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+    .btn.primary:hover { background: #2563eb; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .actions { display: flex; gap: 8px; margin-top: 8px; }
+    .actions .btn.primary { flex: 1; }
+
+    .saved-section {
+      width: 100%; max-width: 640px;
+      margin-top: 24px;
+    }
+    .saved-section h3 { font-size: 14px; color: #888; margin-bottom: 12px; }
+    .saved-list { display: flex; flex-direction: column; gap: 8px; }
+    .saved-item {
+      display: flex;
+      align-items: center;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .saved-item:hover { border-color: #555; }
+    .saved-item .info { flex: 1; }
+    .saved-item .label { font-size: 14px; font-weight: 500; }
+    .saved-item .host { font-size: 12px; color: #888; }
+    .saved-item .delete-btn {
+      background: none; border: none; color: #666; cursor: pointer;
+      font-size: 18px; padding: 4px 8px; border-radius: 4px;
+    }
+    .saved-item .delete-btn:hover { color: #ef4444; background: #1f1f1f; }
+
+    .status-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 10px 20px;
+      background: #111;
+      border-top: 1px solid #333;
+      font-size: 13px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-bar.visible { display: flex; }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #888;
+    }
+    .status-dot.connecting { background: #f59e0b; animation: pulse 1s infinite; }
+    .status-dot.deploying { background: #8b5cf6; animation: pulse 1s infinite; }
+    .status-dot.ready { background: #22c55e; }
+    .status-dot.error { background: #ef4444; }
+    .status-bar .msg { flex: 1; color: #aaa; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .error-msg { color: #ef4444; font-size: 13px; margin-top: 8px; display: none; }
+    .error-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+  <h1>Ship Flow</h1>
+  <p class="subtitle">Choose how to connect</p>
+
+  <div class="cards">
+    <div class="card" id="card-local" onclick="selectMode('local')">
+      <h2>Local</h2>
+      <p>Run everything on this machine</p>
+    </div>
+    <div class="card" id="card-ssh" onclick="selectMode('ssh')">
+      <h2>Remote SSH</h2>
+      <p>Connect to a remote server via SSH tunnel</p>
+    </div>
+  </div>
+
+  <div class="form-section" id="ssh-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Host</label>
+        <input type="text" id="ssh-host" placeholder="192.168.1.100 or hostname">
+      </div>
+      <div class="form-group small">
+        <label>Port</label>
+        <input type="number" id="ssh-port" value="22">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="ssh-username" placeholder="ubuntu">
+    </div>
+    <div class="form-group">
+      <label>Private Key</label>
+      <div class="key-row">
+        <input type="text" id="ssh-key" placeholder="~/.ssh/id_ed25519" readonly>
+        <button class="btn" id="browse-btn" onclick="browseKey()">Browse</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Connection Label (optional)</label>
+      <input type="text" id="ssh-label" placeholder="My Server">
+    </div>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="actions">
+      <button class="btn" id="test-btn" onclick="testConnection()">Test</button>
+      <button class="btn primary" id="connect-btn" onclick="connectSSH()">Connect</button>
+    </div>
+  </div>
+
+  <div class="saved-section" id="saved-section" style="display:none">
+    <h3>Saved Connections</h3>
+    <div class="saved-list" id="saved-list"></div>
+  </div>
+
+  <div class="status-bar" id="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span class="msg" id="status-msg">Connecting...</span>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id)
+    let mode = null
+
+    function selectMode(m) {
+      mode = m
+      $("card-local").classList.toggle("active", m === "local")
+      $("card-ssh").classList.toggle("active", m === "ssh")
+      $("ssh-form").classList.toggle("visible", m === "ssh")
+      hideError()
+
+      if (m === "local") {
+        showStatus("connecting", "Starting local server...")
+        window.shipflow.send("ssh:connect-local")
+      }
+    }
+
+    function hideError() {
+      $("error-msg").classList.remove("visible")
+    }
+
+    function showError(msg) {
+      $("error-msg").textContent = msg
+      $("error-msg").classList.add("visible")
+    }
+
+    function showStatus(status, msg) {
+      $("status-bar").classList.add("visible")
+      $("status-dot").className = "status-dot " + status
+      $("status-msg").textContent = msg
+    }
+
+    function hideStatus() {
+      $("status-bar").classList.remove("visible")
+    }
+
+    function setFormEnabled(enabled) {
+      const els = ["ssh-host", "ssh-port", "ssh-username", "ssh-key", "ssh-label", "browse-btn", "test-btn", "connect-btn"]
+      els.forEach((id) => {
+        const el = $(id)
+        if (el) el.disabled = !enabled
+      })
+    }
+
+    async function browseKey() {
+      const keyPath = await window.shipflow.invoke("ssh:browse-key")
+      if (keyPath) $("ssh-key").value = keyPath
+    }
+
+    function getSSHConfig() {
+      return {
+        host: $("ssh-host").value.trim(),
+        port: parseInt($("ssh-port").value, 10) || 22,
+        username: $("ssh-username").value.trim(),
+        privateKeyPath: $("ssh-key").value.trim(),
+      }
+    }
+
+    async function testConnection() {
+      const config = getSSHConfig()
+      if (!config.host || !config.username || !config.privateKeyPath) {
+        showError("Please fill in host, username, and key path")
+        return
+      }
+      hideError()
+      $("test-btn").disabled = true
+      $("test-btn").textContent = "Testing..."
+
+      try {
+        const result = await window.shipflow.invoke("ssh:test-connection", config)
+        if (result.ok) {
+          $("test-btn").textContent = "OK!"
+          setTimeout(() => { $("test-btn").textContent = "Test"; $("test-btn").disabled = false }, 2000)
+        } else {
+          showError(result.error || "Connection failed")
+          $("test-btn").textContent = "Test"
+          $("test-btn").disabled = false
+        }
+      } catch (err) {
+        showError(err.message || "Test failed")
+        $("test-btn").textContent = "Test"
+        $("test-btn").disabled = false
+      }
+    }
+
+    async function connectSSH() {
+      const config = getSSHConfig()
+      if (!config.host || !config.username || !config.privateKeyPath) {
+        showError("Please fill in host, username, and key path")
+        return
+      }
+      hideError()
+      setFormEnabled(false)
+      showStatus("connecting", "Connecting to " + config.host + "...")
+
+      // Save connection
+      const label = $("ssh-label").value.trim() || config.host
+      try {
+        await window.shipflow.invoke("ssh:save-connection", {
+          label,
+          ...config,
+        })
+      } catch {}
+
+      window.shipflow.send("ssh:connect", config)
+    }
+
+    async function connectSaved(id) {
+      const connections = await window.shipflow.invoke("ssh:list-connections")
+      const conn = connections.find((c) => c.id === id)
+      if (!conn) return
+
+      selectMode("ssh")
+      $("ssh-host").value = conn.host
+      $("ssh-port").value = conn.port
+      $("ssh-username").value = conn.username
+      $("ssh-key").value = conn.privateKeyPath
+      $("ssh-label").value = conn.label
+
+      connectSSH()
+    }
+
+    async function deleteSaved(id, event) {
+      event.stopPropagation()
+      await window.shipflow.invoke("ssh:delete-connection", id)
+      loadSavedConnections()
+    }
+
+    async function loadSavedConnections() {
+      try {
+        const connections = await window.shipflow.invoke("ssh:list-connections")
+        const section = $("saved-section")
+        const list = $("saved-list")
+
+        if (connections.length === 0) {
+          section.style.display = "none"
+          return
+        }
+
+        section.style.display = "block"
+        list.innerHTML = connections.map((c) => `
+          <div class="saved-item" onclick="connectSaved('${c.id}')">
+            <div class="info">
+              <div class="label">${esc(c.label)}</div>
+              <div class="host">${esc(c.username)}@${esc(c.host)}:${c.port}</div>
+            </div>
+            <button class="delete-btn" onclick="deleteSaved('${c.id}', event)" title="Delete">&times;</button>
+          </div>
+        `).join("")
+      } catch {}
+    }
+
+    function esc(s) {
+      const d = document.createElement("div")
+      d.textContent = s
+      return d.innerHTML
+    }
+
+    // Listen for status changes
+    window.shipflow.on("ssh:status-changed", (status) => {
+      if (status.status === "connecting") {
+        showStatus("connecting", "Connecting" + (status.host ? " to " + status.host : "") + "...")
+      } else if (status.status === "deploying") {
+        showStatus("deploying", "Deploying server...")
+      } else if (status.status === "error") {
+        showStatus("error", status.error || "Connection failed")
+        setFormEnabled(true)
+        showError(status.error || "Connection failed")
+      } else if (status.status === "disconnected") {
+        hideStatus()
+        setFormEnabled(true)
+      }
+      // "ready" — main process will navigate to dashboard
+    })
+
+    window.shipflow.on("ssh:deploy-progress", (progress) => {
+      showStatus("deploying", progress.message + (progress.percent ? " (" + progress.percent + "%)" : ""))
+    })
+
+    window.shipflow.on("ssh:error", (errMsg) => {
+      showStatus("error", errMsg)
+      showError(errMsg)
+      setFormEnabled(true)
+    })
+
+    // Load saved connections on page load
+    loadSavedConnections()
+  </script>
+</body>
+</html>

@@ -108,16 +108,16 @@ test.describe("Bundle Detail", () => {
     await expect(page.getByText("Project Brief").first()).toBeVisible()
   })
 
-  test("Generate Prompt from Bundle button links correctly", async ({
+  test("Help Me Write from Bundle button links correctly", async ({
     page,
   }) => {
     await page.goto(`/projects/${projectId}/bundles/${bundleId}`)
 
-    const generateLink = page.getByRole("link", {
-      name: /generate prompt from bundle/i,
+    const writeLink = page.getByRole("link", {
+      name: /help me write from bundle/i,
     })
-    await expect(generateLink).toBeVisible()
-    await expect(generateLink).toHaveAttribute(
+    await expect(writeLink).toBeVisible()
+    await expect(writeLink).toHaveAttribute(
       "href",
       new RegExp(`bundleId=${bundleId}`)
     )

@@ -33,7 +33,6 @@ test.describe("Document Management", () => {
 
     await expect(page.getByRole("tab", { name: "Edit" })).toBeVisible()
     await expect(page.getByRole("tab", { name: "Preview" })).toBeVisible()
-    await expect(page.getByRole("tab", { name: "Split" })).toBeVisible()
   })
 
   test("editor shows word count", async ({ page }) => {
@@ -92,10 +91,9 @@ test.describe("Document Management", () => {
     await page.getByRole("tab", { name: "Edit" }).click()
     await expect(page.locator("textarea").first()).toBeVisible()
 
-    // Switch to split
-    await page.getByRole("tab", { name: "Split" }).click()
+    // Switch back to edit
+    await page.getByRole("tab", { name: "Edit" }).click()
     await expect(page.locator("textarea").first()).toBeVisible()
-    await expect(page.locator(".prose")).toBeVisible()
   })
 })
 
@@ -123,11 +121,14 @@ test.describe("Document Linking", () => {
     await context.close()
   })
 
-  test("document page shows link manager", async ({ page }) => {
+  test("document page shows link manager in sheet", async ({ page }) => {
     await page.goto(docUrl)
 
-    // Link manager section should be visible
-    await expect(page.getByText("Document Links")).toBeVisible()
+    // Click "Links" button to open the sheet
+    await page.getByRole("button", { name: /links/i }).click()
+
+    // Link manager section should be visible in the sheet
+    await expect(page.getByText("Document Links").last()).toBeVisible()
     await expect(
       page.getByRole("button", { name: "Add Link" })
     ).toBeVisible()
@@ -136,6 +137,9 @@ test.describe("Document Linking", () => {
 
   test("can add a document link", async ({ page }) => {
     await page.goto(docUrl)
+
+    // Open link manager sheet
+    await page.getByRole("button", { name: /links/i }).click()
 
     // Click Add Link
     await page.getByRole("button", { name: "Add Link" }).click()
@@ -162,6 +166,9 @@ test.describe("Document Linking", () => {
 
   test("can remove a document link", async ({ page }) => {
     await page.goto(docUrl)
+
+    // Open link manager sheet
+    await page.getByRole("button", { name: /links/i }).click()
 
     // If no link exists yet, add one first
     const noLinks = page.getByText("No outgoing links")
@@ -256,13 +263,19 @@ test.describe("Document Title & Generate", () => {
     await page.waitForTimeout(1000)
   })
 
-  test("can generate prompt from document page", async ({ page }) => {
+  test("can open writing assistant panel from document page", async ({ page }) => {
     await page.goto(detailDocUrl)
 
+    // Click "Help me write this" button to open panel
     await page
-      .getByRole("link", { name: /generate prompt/i })
+      .getByRole("button", { name: /help me write/i })
       .click()
-    await page.waitForURL(/\/prompts\/generate\?docId=/, { timeout: 10000 })
+
+    // Panel should open with the writing assistant
+    await expect(page.getByText("Writing Assistant")).toBeVisible({
+      timeout: 10000,
+    })
+    await expect(page.getByText("Prompt Context")).toBeVisible()
   })
 })
 

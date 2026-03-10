@@ -1,7 +1,7 @@
 "use server"
 
 import JSZip from "jszip"
-import { prisma } from "@/lib/prisma"
+import { getDocumentRepo, getBundleRepo } from "@/lib/repositories"
 import {
   requireProjectAccess,
   requireDocAccess,
@@ -10,7 +10,7 @@ import {
 import { PHASE_LABELS, PHASES } from "@/lib/constants"
 import { formatCursor } from "@/lib/prompt-engine/formatters/cursor"
 import { formatClaudeProjects } from "@/lib/prompt-engine/formatters/claude-projects"
-import type { Phase } from "@prisma/client"
+import type { Phase } from "@/lib/types/enums"
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[/\\:*?"<>|]/g, "-").trim() || "untitled"
@@ -47,9 +47,9 @@ function buildAssembledContent(
 export async function exportProjectAsZip(projectId: string): Promise<string> {
   const { project } = await requireProjectAccess(projectId)
 
-  const documents = await prisma.document.findMany({
-    where: { projectId },
-    orderBy: [{ phase: "asc" }, { sortOrder: "asc" }],
+  const documentRepo = getDocumentRepo()
+  const documents = await documentRepo.findManyByProject(projectId, {
+    orderBy: [{ field: "phase", direction: "asc" }, { field: "sortOrder", direction: "asc" }],
   })
 
   const zip = new JSZip()
@@ -79,9 +79,9 @@ export async function exportAsCursorRules(
 ): Promise<{ filename: string; content: string }> {
   const { project } = await requireProjectAccess(projectId)
 
-  const documents = await prisma.document.findMany({
-    where: { projectId },
-    orderBy: [{ phase: "asc" }, { sortOrder: "asc" }],
+  const documentRepo = getDocumentRepo()
+  const documents = await documentRepo.findManyByProject(projectId, {
+    orderBy: [{ field: "phase", direction: "asc" }, { field: "sortOrder", direction: "asc" }],
   })
 
   const assembled = buildAssembledContent(
@@ -103,9 +103,9 @@ export async function exportAsClaudeProject(
 ): Promise<{ filename: string; content: string }> {
   const { project } = await requireProjectAccess(projectId)
 
-  const documents = await prisma.document.findMany({
-    where: { projectId },
-    orderBy: [{ phase: "asc" }, { sortOrder: "asc" }],
+  const documentRepo = getDocumentRepo()
+  const documents = await documentRepo.findManyByProject(projectId, {
+    orderBy: [{ field: "phase", direction: "asc" }, { field: "sortOrder", direction: "asc" }],
   })
 
   const assembled = buildAssembledContent(
@@ -125,16 +125,8 @@ export async function exportAsClaudeProject(
 export async function exportBundle(
   bundleId: string
 ): Promise<{ filename: string; content: string }> {
-  const bundle = await prisma.contextBundle.findUnique({
-    where: { id: bundleId },
-    include: {
-      project: { select: { userId: true, name: true, description: true, techStack: true } },
-      documents: {
-        orderBy: { sortOrder: "asc" },
-        include: { document: true },
-      },
-    },
-  })
+  const bundleRepo = getBundleRepo()
+  const bundle = await bundleRepo.findByIdWithProjectAndDocs(bundleId)
 
   if (!bundle) throw new Error("Bundle not found")
 

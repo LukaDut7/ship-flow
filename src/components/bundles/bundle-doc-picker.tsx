@@ -2,7 +2,7 @@
 
 import { PHASES, PHASE_LABELS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
-import type { Phase } from "@prisma/client"
+import type { Phase } from "@/lib/types/enums"
 
 interface Document {
   id: string

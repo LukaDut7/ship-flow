@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma"
-import type { LinkType } from "@prisma/client"
+import { getDocumentLinkRepo } from "@/lib/repositories"
+import type { LinkType } from "@/lib/types/enums"
 
 export interface ResolvedDoc {
   title: string
@@ -27,10 +27,8 @@ const EXCLUDED_LINK_TYPES: LinkType[] = ["SUPERSEDES"]
 export async function resolveContext(
   documentId: string
 ): Promise<ResolveContextResult> {
-  const links = await prisma.documentLink.findMany({
-    where: { fromDocId: documentId },
-    include: { toDoc: true },
-  })
+  const documentLinkRepo = getDocumentLinkRepo()
+  const links = await documentLinkRepo.findByFromDoc(documentId)
 
   const linkedDocs: ResolvedDoc[] = []
   const optionalDocs: ResolvedDoc[] = []

@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma"
+import { getDocumentRepo } from "@/lib/repositories"
 import { requireProjectAccess } from "@/lib/auth-guard"
 import { Header } from "@/components/layout/header"
-import { PromptGenerator } from "@/components/prompts/prompt-generator"
+import { WritingAssistant } from "@/components/prompts/writing-assistant"
 
 export default async function GeneratePromptPage({
   params,
@@ -14,26 +14,21 @@ export default async function GeneratePromptPage({
   const { docId } = await searchParams
   await requireProjectAccess(projectId)
 
-  const documents = await prisma.document.findMany({
-    where: { projectId },
-    select: { id: true, title: true, phase: true, docType: true, content: true },
-    orderBy: [{ phase: "asc" }, { sortOrder: "asc" }],
-  })
+  const documents = await getDocumentRepo().findManyByProject(projectId)
 
   const docs = documents.map((d) => ({
     id: d.id,
     title: d.title,
     phase: d.phase,
     docType: d.docType,
-    content: d.content,
   }))
 
   return (
     <div className="flex h-full flex-col">
-      <Header title="Generate Prompt" />
+      <Header title="Help Me Write" />
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mx-auto max-w-6xl">
-          <PromptGenerator
+          <WritingAssistant
             projectId={projectId}
             documents={docs}
             initialDocId={docId ?? undefined}

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { prisma } from "@/lib/prisma"
+import { getDocumentRepo } from "@/lib/repositories"
 import { requireProjectAccess } from "@/lib/auth-guard"
 import { DOC_TYPE_LABELS, PHASES, PHASE_LABELS } from "@/lib/constants"
 import { timeAgo } from "@/lib/time-ago"
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import type { DocType, Phase } from "@prisma/client"
+import type { DocType, Phase } from "@/lib/types/enums"
 
 export default async function DocsPage({
   params,
@@ -21,10 +21,7 @@ export default async function DocsPage({
   const { phase: phaseParam } = await searchParams
   await requireProjectAccess(projectId)
 
-  const documents = await prisma.document.findMany({
-    where: { projectId },
-    orderBy: [{ phase: "asc" }, { sortOrder: "asc" }],
-  })
+  const documents = await getDocumentRepo().findManyByProject(projectId)
 
   const initialTab =
     phaseParam && PHASES.includes(phaseParam as Phase) ? phaseParam : "all"
