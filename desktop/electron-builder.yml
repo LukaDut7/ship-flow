@@ -7,8 +7,12 @@ files:
   - dist/**/*
   - package.json
 extraResources:
-  - from: ../standalone
+  - from: ../.next/standalone
     to: standalone
+    filter:
+      - "**/*"
+  - from: .runtime
+    to: node-bin
     filter:
       - "**/*"
 asar: true
@@ -48,6 +52,8 @@ nsis:
   deleteAppDataOnUninstall: false
 
 linux:
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+  executableName: ship-flow
   target:
     - target: AppImage
       arch:

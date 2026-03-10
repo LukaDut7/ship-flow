@@ -30,14 +30,10 @@ export function ProjectSettingsForm({
   initialTechStack,
 }: ProjectSettingsFormProps) {
   const [techStack, setTechStack] = React.useState<string[]>(initialTechStack)
-
-  async function handleSubmit(formData: FormData) {
-    formData.set("techStack", techStack.join(", "))
-    await updateProject(projectId, formData)
-  }
+  const updateProjectAction = updateProject.bind(null, projectId)
 
   return (
-    <form action={handleSubmit}>
+    <form action={updateProjectAction}>
       <Card>
         <CardHeader>
           <CardTitle>General</CardTitle>
@@ -69,6 +65,12 @@ export function ProjectSettingsForm({
           <div className="space-y-2">
             <Label>Tech Stack</Label>
             <TechStackPicker value={techStack} onChange={setTechStack} />
+            <input
+              type="hidden"
+              name="techStack"
+              value={techStack.join(", ")}
+              readOnly
+            />
           </div>
         </CardContent>
         <CardFooter>

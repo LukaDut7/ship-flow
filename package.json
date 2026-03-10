@@ -9,14 +9,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:standalone": "npm run build && node scripts/prepare-standalone.mjs",
     "start": "next start",
-    "desktop:dev": "npm run build && npm --workspace ./desktop run dev",
-    "desktop:build": "npm run build && npm --workspace ./desktop run build",
-    "desktop:package": "npm run build && npm --workspace ./desktop run package",
+    "desktop:dev": "npm run build:standalone && npm --workspace ./desktop run dev",
+    "desktop:build": "npm run build:standalone && npm --workspace ./desktop run build",
+    "desktop:package": "npm run build:standalone && npm --workspace ./desktop run package",
     "lint": "eslint",
-    "test:e2e": "E2E_TEST=true npx playwright test",
-    "test:e2e:ui": "E2E_TEST=true npx playwright test --ui",
-    "test:e2e:headed": "E2E_TEST=true npx playwright test --headed"
+    "test:e2e": "node -e \"const fs=require('fs');fs.rmSync('playwright-report',{recursive:true,force:true});fs.rmSync('test-results',{recursive:true,force:true});\" && npm run build:standalone && E2E_TEST=true npx playwright test",
+    "test:e2e:ui": "node -e \"const fs=require('fs');fs.rmSync('playwright-report',{recursive:true,force:true});fs.rmSync('test-results',{recursive:true,force:true});\" && npm run build:standalone && E2E_TEST=true npx playwright test --ui",
+    "test:e2e:headed": "node -e \"const fs=require('fs');fs.rmSync('playwright-report',{recursive:true,force:true});fs.rmSync('test-results',{recursive:true,force:true});\" && npm run build:standalone && E2E_TEST=true npx playwright test --headed",
+    "test:desktop:smoke": "npm run desktop:build && if command -v xvfb-run >/dev/null 2>&1 && [ -z \"$DISPLAY\" ]; then xvfb-run -a node scripts/test-desktop-smoke.mjs; else node scripts/test-desktop-smoke.mjs; fi"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

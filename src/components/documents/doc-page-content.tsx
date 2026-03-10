@@ -25,7 +25,6 @@ interface LinkedDoc {
 
 interface DocPageContentProps {
   docId: string
-  projectId: string
   title: string
   content: string
   phase: string
@@ -53,7 +52,6 @@ const DEFAULT_PANEL_WIDTH = 400
 
 export function DocPageContent({
   docId,
-  projectId,
   title,
   content,
   phaseLabel,
@@ -66,6 +64,7 @@ export function DocPageContent({
   allDocs,
 }: DocPageContentProps) {
   const [panelOpen, setPanelOpen] = useState(false)
+  const [linksOpen, setLinksOpen] = useState(false)
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH)
   const [isResizing, setIsResizing] = useState(false)
   const resizeRef = useRef({ startX: 0, startWidth: 0 })
@@ -120,7 +119,7 @@ export function DocPageContent({
               <Sparkles className="mr-1 size-3.5" />
               Help me write this
             </Button>
-            <Sheet>
+            <Sheet open={linksOpen} onOpenChange={setLinksOpen}>
               <SheetTrigger asChild>
                 <Button size="sm" variant="ghost">
                   <Link2 className="mr-1 size-3.5" />
@@ -134,7 +133,6 @@ export function DocPageContent({
                 <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
                   <DocLinkManager
                     docId={docId}
-                    projectId={projectId}
                     linksFrom={linksFrom}
                     linksTo={linksTo}
                     allDocs={allDocs}

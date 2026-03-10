@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 
 interface LinkManagerPanelProps {
   docId: string
-  projectId: string
   linksFrom: Array<{
     id: string
     linkType: string
@@ -24,7 +23,6 @@ interface LinkManagerPanelProps {
 
 export function LinkManagerPanel({
   docId,
-  projectId,
   linksFrom,
   linksTo,
   allDocs,
@@ -56,7 +54,6 @@ export function LinkManagerPanel({
         <div className="flex-1 overflow-y-auto p-4">
           <DocLinkManager
             docId={docId}
-            projectId={projectId}
             linksFrom={linksFrom}
             linksTo={linksTo}
             allDocs={allDocs}

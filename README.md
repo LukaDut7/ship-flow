@@ -76,6 +76,12 @@ Build the standalone server plus compiled Electron files:
 npm run desktop:build
 ```
 
+Run the desktop smoke test:
+
+```bash
+npm run test:desktop:smoke
+```
+
 Package the desktop app:
 
 ```bash
@@ -85,6 +91,7 @@ npm run desktop:package
 ## Notes
 
 - The desktop runtime uses the local standalone app server rather than `next dev`.
+- Packaged desktop builds bundle their own Node runtime so the local server works offline without requiring a system Node install.
 - Remote SSH and cloud sync are separate features.
 - In local mode, the desktop app owns local data and can sync it to cloud later.
 - In SSH mode, the remote Ship Flow server owns the workspace state.

@@ -188,6 +188,7 @@ export async function startRemoteServer(client: Client): Promise<{ pid: number; 
     `HOSTNAME=127.0.0.1`,
     `SHIPFLOW_RUNTIME=desktop`,
     `SHIPFLOW_DATA_DIR=${REMOTE_DIR}/data`,
+    `AUTH_TRUST_HOST=true`,
     `NEXTAUTH_SECRET="${secret.trim()}"`,
     `NEXTAUTH_URL="http://127.0.0.1:${port}"`,
   ].join(" ")

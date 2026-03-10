@@ -2,7 +2,7 @@
 
 import { getProjectRepo, getDocumentRepo, getDocumentLinkRepo } from "@/lib/repositories"
 import { requireAuth, checkTierLimit } from "@/lib/auth-guard"
-import { PHASE_DOC_MAP, DOC_TYPE_LABELS, DOC_TYPE_TO_PHASE } from "@/lib/constants"
+import { PHASE_DOC_MAP, DOC_TYPE_LABELS } from "@/lib/constants"
 import { TEMPLATES } from "@/lib/doc-templates"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
@@ -45,10 +45,8 @@ const DEFAULT_DOC_LINKS: Array<{ from: DocType; to: DocType; type: LinkType }> =
   { from: "ITERATION_LOG", to: "FEEDBACK_CAPTURE", type: "REFERENCES" },
 ]
 
-export async function createProject(formData: FormData) {
-  const user = await requireAuth()
-  await checkTierLimit(user.id, "projects")
-
+async function createProjectForUser(userId: string, formData: FormData) {
+  await checkTierLimit(userId, "projects")
   const name = formData.get("name") as string
   const description = (formData.get("description") as string) || ""
   const techStackRaw = formData.get("techStack") as string
@@ -58,7 +56,7 @@ export async function createProject(formData: FormData) {
 
   const projectRepo = getProjectRepo()
   const project = await projectRepo.create({
-    userId: user.id,
+    userId,
     name,
     description,
     techStack,
@@ -99,8 +97,37 @@ export async function createProject(formData: FormData) {
     await documentLinkRepo.createMany(linkData)
   }
 
+  return project.id
+}
+
+export async function createProject(formData: FormData) {
+  const user = await requireAuth()
+  const projectId = await createProjectForUser(user.id, formData)
+
   revalidatePath("/dashboard")
-  redirect(`/projects/${project.id}`)
+  redirect(`/projects/${projectId}`)
+}
+
+export async function createProjectWithState(
+  _prevState: { error: string | null },
+  formData: FormData
+) {
+  const user = await requireAuth()
+
+  let projectId: string
+  try {
+    projectId = await createProjectForUser(user.id, formData)
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not create project. Please try again.",
+    }
+  }
+
+  revalidatePath("/dashboard")
+  redirect(`/projects/${projectId}`)
 }
 
 export async function updateProject(projectId: string, formData: FormData) {

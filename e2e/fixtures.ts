@@ -32,10 +32,10 @@ export async function createProjectViaUI(
   }
 
   await nameInput.fill(name)
-  await page.getByRole("button", { name: /create project/i }).click()
-
-  // Wait for redirect to a real project page (not /projects/new)
-  await page.waitForURL(/\/projects\/(?!new)[^/]+/, { timeout: 30000 })
+  await Promise.all([
+    page.waitForURL(/\/projects\/(?!new)[^/]+/, { timeout: 30000 }),
+    page.getByRole("button", { name: /create project/i }).click(),
+  ])
   const match = page.url().match(/\/projects\/([^/]+)/)
   return match?.[1] || ""
 }
@@ -58,10 +58,10 @@ export async function createBundleViaUI(
     await checkbox.check()
   }
 
-  await page.getByRole("button", { name: /create bundle/i }).click()
-
-  // Wait for redirect to bundle detail
-  await page.waitForURL(/\/bundles\/(?!new)[^/]+/, { timeout: 30000 })
+  await Promise.all([
+    page.waitForURL(/\/bundles\/(?!new)[^/]+/, { timeout: 30000 }),
+    page.getByRole("button", { name: /create bundle/i }).click(),
+  ])
   const match = page.url().match(/\/bundles\/([^/]+)/)
   return match?.[1] || ""
 }

@@ -1,5 +1,12 @@
 import { defineConfig, devices } from "@playwright/test"
 
+const isE2E = !!process.env.E2E_TEST
+const port = isE2E ? 3100 : 3000
+const baseURL = `http://localhost:${port}`
+const serverCommand = isE2E
+  ? `PORT=${port} NEXTAUTH_URL=${baseURL} AUTH_TRUST_HOST=true node .next/standalone/server.js`
+  : `PORT=${port} NEXTAUTH_URL=${baseURL} AUTH_TRUST_HOST=true npm run dev`
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -8,7 +15,7 @@ export default defineConfig({
   workers: 1,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -24,9 +31,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    command: serverCommand,
+    url: baseURL,
+    reuseExistingServer: !process.env.CI && !isE2E,
     timeout: 120_000,
   },
 })

@@ -3,6 +3,7 @@ import { app } from "electron"
 import * as net from "net"
 import * as path from "path"
 import * as http from "http"
+import * as fs from "fs"
 
 let serverProcess: ChildProcess | null = null
 let serverPort: number = 0
@@ -26,6 +27,19 @@ function getServerPath(): string {
   }
   // In development, use the built standalone output
   return path.join(__dirname, "..", "..", "..", ".next", "standalone", "server.js")
+}
+
+function getNodePath(): string {
+  if (app.isPackaged) {
+    const binaryName = process.platform === "win32" ? "node.exe" : "node"
+    const bundledNode = path.join(process.resourcesPath, "node-bin", binaryName)
+    if (!fs.existsSync(bundledNode)) {
+      throw new Error(`Bundled Node runtime not found at ${bundledNode}`)
+    }
+    return bundledNode
+  }
+
+  return process.env.SHIPFLOW_NODE_BINARY || process.env.NODE_BINARY || "node"
 }
 
 export function healthCheck(port: number): Promise<boolean> {
@@ -53,15 +67,17 @@ async function waitForServer(port: number, maxAttempts = 30): Promise<void> {
 export async function startServer(): Promise<number> {
   const port = await findFreePort()
   const serverPath = getServerPath()
+  const nodePath = getNodePath()
   const dataDir = app.getPath("userData")
 
-  serverProcess = spawn(process.execPath, [serverPath], {
+  serverProcess = spawn(nodePath, [serverPath], {
     env: {
       ...process.env,
       PORT: String(port),
       HOSTNAME: "127.0.0.1",
       SHIPFLOW_RUNTIME: "desktop",
       SHIPFLOW_DATA_DIR: dataDir,
+      AUTH_TRUST_HOST: "true",
       // JWT secret for desktop sessions
       NEXTAUTH_SECRET: `shipflow-desktop-${app.getPath("userData")}`,
       NEXTAUTH_URL: `http://127.0.0.1:${port}`,

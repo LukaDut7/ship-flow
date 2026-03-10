@@ -34,27 +34,14 @@ export function BundleForm({
   const [selectedIds, setSelectedIds] = useState<string[]>(
     bundle?.documentIds ?? []
   )
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
   const isEditing = !!bundle
-
-  const handleSubmit = async (formData: FormData) => {
-    setIsSubmitting(true)
-    formData.set("documentIds", selectedIds.join(","))
-    try {
-      if (isEditing) {
-        await updateBundle(bundle.id, formData)
-      } else {
-        await createBundle(projectId, formData)
-      }
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const bundleAction = isEditing
+    ? updateBundle.bind(null, bundle.id)
+    : createBundle.bind(null, projectId)
 
   return (
     <form
-      action={handleSubmit}
+      action={bundleAction}
       className="flex flex-col gap-6 rounded-lg border bg-card p-6 shadow-sm"
     >
       <div className="flex flex-col gap-2">
@@ -88,11 +75,17 @@ export function BundleForm({
           selectedIds={selectedIds}
           onChange={setSelectedIds}
         />
+        <input
+          type="hidden"
+          name="documentIds"
+          value={selectedIds.join(",")}
+          readOnly
+        />
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving…" : isEditing ? "Update Bundle" : "Create Bundle"}
+        <Button type="submit">
+          {isEditing ? "Update Bundle" : "Create Bundle"}
         </Button>
         <Link href={`/projects/${projectId}/bundles`}>
           <Button type="button" variant="outline">

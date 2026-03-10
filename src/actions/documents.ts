@@ -1,7 +1,7 @@
 "use server"
 
 import { getDocumentRepo, getDocumentLinkRepo } from "@/lib/repositories"
-import { requireAuth, requireProjectAccess, requireDocAccess } from "@/lib/auth-guard"
+import { requireProjectAccess, requireDocAccess } from "@/lib/auth-guard"
 import { DOC_TYPE_LABELS, DOC_TYPE_TO_PHASE } from "@/lib/constants"
 import { TEMPLATES } from "@/lib/doc-templates"
 import { revalidatePath } from "next/cache"
@@ -80,10 +80,10 @@ export async function addDocumentLink(
   const existing = await documentLinkRepo.findByUniqueKey(fromDocId, toDocId)
   if (existing) return { error: "Link already exists" }
 
-  await documentLinkRepo.create({ fromDocId, toDocId, linkType })
+  const link = await documentLinkRepo.create({ fromDocId, toDocId, linkType })
 
   revalidatePath(`/projects/`)
-  return { success: true }
+  return { success: true, link }
 }
 
 export async function removeDocumentLink(linkId: string) {

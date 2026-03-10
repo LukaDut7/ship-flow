@@ -21,7 +21,7 @@ function rowToUser(row: typeof users.$inferSelect): User {
 export class DesktopUserRepo implements UserRepo {
   async ensureLocalUser(): Promise<User> {
     const db = getDesktopDb()
-    const rows = await db
+    let rows = await db
       .select()
       .from(users)
       .where(eq(users.id, LOCAL_DESKTOP_USER_ID))
@@ -29,23 +29,23 @@ export class DesktopUserRepo implements UserRepo {
 
     if (!rows[0]) {
       const now = new Date()
-      await db.insert(users).values({
-        id: LOCAL_DESKTOP_USER_ID,
-        name: "Local Workspace",
-        email: null,
-        image: null,
-        tier: "FREE",
-        cachedAt: now,
-      })
-      return {
-        id: LOCAL_DESKTOP_USER_ID,
-        name: "Local Workspace",
-        email: null,
-        emailVerified: null,
-        image: null,
-        tier: "FREE",
-        createdAt: now,
-      }
+      await db
+        .insert(users)
+        .values({
+          id: LOCAL_DESKTOP_USER_ID,
+          name: "Local Workspace",
+          email: null,
+          image: null,
+          tier: "FREE",
+          cachedAt: now,
+        })
+        .onConflictDoNothing({ target: users.id })
+
+      rows = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, LOCAL_DESKTOP_USER_ID))
+        .limit(1)
     }
 
     return rowToUser(rows[0])

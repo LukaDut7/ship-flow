@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { X, Plus, ArrowRight, ArrowLeft } from "lucide-react"
 import { addDocumentLink, removeDocumentLink } from "@/actions/documents"
 import { LINK_TYPE_LABELS } from "@/lib/constants"
@@ -34,7 +34,6 @@ interface DocLink {
 
 interface DocLinkManagerProps {
   docId: string
-  projectId: string
   linksFrom: DocLink[]
   linksTo: DocLink[]
   allDocs: Array<{ id: string; title: string }>
@@ -49,7 +48,6 @@ const LINK_TYPES: LinkType[] = [
 
 export function DocLinkManager({
   docId,
-  projectId,
   linksFrom,
   linksTo,
   allDocs,
@@ -58,9 +56,19 @@ export function DocLinkManager({
   const [open, setOpen] = useState(false)
   const [selectedDocId, setSelectedDocId] = useState<string>("")
   const [selectedLinkType, setSelectedLinkType] = useState<LinkType>("DEPENDS_ON")
+  const [outgoingLinks, setOutgoingLinks] = useState(linksFrom)
+  const [incomingLinks, setIncomingLinks] = useState(linksTo)
+
+  useEffect(() => {
+    setOutgoingLinks(linksFrom)
+  }, [linksFrom])
+
+  useEffect(() => {
+    setIncomingLinks(linksTo)
+  }, [linksTo])
 
   const availableDocs = allDocs.filter((d) => d.id !== docId)
-  const linkedDocIds = new Set(linksFrom.map((l) => l.toDoc?.id).filter(Boolean))
+  const linkedDocIds = new Set(outgoingLinks.map((l) => l.toDoc?.id).filter(Boolean))
 
   const handleAddLink = async () => {
     if (!selectedDocId) return
@@ -68,6 +76,18 @@ export function DocLinkManager({
 
     const result = await addDocumentLink(docId, selectedDocId, selectedLinkType)
     if (result?.error) return
+
+    const selectedDoc = availableDocs.find((doc) => doc.id === selectedDocId)
+    if (selectedDoc && result?.link) {
+      setOutgoingLinks((current) => [
+        ...current,
+        {
+          id: result.link.id,
+          linkType: result.link.linkType,
+          toDoc: { id: selectedDoc.id, title: selectedDoc.title },
+        },
+      ])
+    }
 
     setOpen(false)
     setSelectedDocId("")
@@ -77,6 +97,8 @@ export function DocLinkManager({
 
   const handleRemoveLink = async (linkId: string) => {
     await removeDocumentLink(linkId)
+    setOutgoingLinks((current) => current.filter((link) => link.id !== linkId))
+    setIncomingLinks((current) => current.filter((link) => link.id !== linkId))
     router.refresh()
   }
 
@@ -160,9 +182,9 @@ export function DocLinkManager({
             Documents this one depends on or references
           </p>
         </div>
-        {linksFrom.length > 0 ? (
+        {outgoingLinks.length > 0 ? (
           <div className="space-y-1.5">
-            {linksFrom.map((link) => (
+            {outgoingLinks.map((link) => (
               <div
                 key={link.id}
                 className="group flex items-center gap-2.5 rounded-lg border bg-muted/30 px-3 py-2.5"
@@ -202,9 +224,9 @@ export function DocLinkManager({
             Other documents that depend on or reference this one
           </p>
         </div>
-        {linksTo.length > 0 ? (
+        {incomingLinks.length > 0 ? (
           <div className="space-y-1.5">
-            {linksTo.map((link) => (
+            {incomingLinks.map((link) => (
               <div
                 key={link.id}
                 className="group flex items-center gap-2.5 rounded-lg border border-dashed px-3 py-2.5"

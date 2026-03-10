@@ -44,6 +44,7 @@ const electron_1 = require("electron");
 const net = __importStar(require("net"));
 const path = __importStar(require("path"));
 const http = __importStar(require("http"));
+const fs = __importStar(require("fs"));
 let serverProcess = null;
 let serverPort = 0;
 function findFreePort() {
@@ -64,6 +65,17 @@ function getServerPath() {
     }
     // In development, use the built standalone output
     return path.join(__dirname, "..", "..", "..", ".next", "standalone", "server.js");
+}
+function getNodePath() {
+    if (electron_1.app.isPackaged) {
+        const binaryName = process.platform === "win32" ? "node.exe" : "node";
+        const bundledNode = path.join(process.resourcesPath, "node-bin", binaryName);
+        if (!fs.existsSync(bundledNode)) {
+            throw new Error(`Bundled Node runtime not found at ${bundledNode}`);
+        }
+        return bundledNode;
+    }
+    return process.env.SHIPFLOW_NODE_BINARY || process.env.NODE_BINARY || "node";
 }
 function healthCheck(port) {
     return new Promise((resolve) => {
@@ -89,14 +101,16 @@ async function waitForServer(port, maxAttempts = 30) {
 async function startServer() {
     const port = await findFreePort();
     const serverPath = getServerPath();
+    const nodePath = getNodePath();
     const dataDir = electron_1.app.getPath("userData");
-    serverProcess = (0, child_process_1.spawn)(process.execPath, [serverPath], {
+    serverProcess = (0, child_process_1.spawn)(nodePath, [serverPath], {
         env: {
             ...process.env,
             PORT: String(port),
             HOSTNAME: "127.0.0.1",
             SHIPFLOW_RUNTIME: "desktop",
             SHIPFLOW_DATA_DIR: dataDir,
+            AUTH_TRUST_HOST: "true",
             // JWT secret for desktop sessions
             NEXTAUTH_SECRET: `shipflow-desktop-${electron_1.app.getPath("userData")}`,
             NEXTAUTH_URL: `http://127.0.0.1:${port}`,

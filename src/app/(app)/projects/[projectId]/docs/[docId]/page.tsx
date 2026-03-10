@@ -18,7 +18,7 @@ export default async function DocPage({
   params: Promise<{ projectId: string; docId: string }>
 }) {
   const { projectId, docId } = await params
-  const { doc } = await requireDocAccess(docId)
+  await requireDocAccess(docId)
 
   const documentRepo = getDocumentRepo()
   const [docWithLinks, allProjectDocs] = await Promise.all([
@@ -51,7 +51,6 @@ export default async function DocPage({
       <Header title={docWithLinks.title} />
       <DocPageContent
         docId={docId}
-        projectId={projectId}
         title={docWithLinks.title}
         content={docWithLinks.content}
         phase={docWithLinks.phase}
